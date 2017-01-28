@@ -1,0 +1,25 @@
+{
+  "name": "threejsjubilant",
+  "version": "1.0.0",
+  "description": "learning about three.js and webGL",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://mjkkirschner@github.com/mjkkirschner/threejsJubilant.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mjkkirschner/threejsJubilant/issues"
+  },
+  "homepage": "https://github.com/mjkkirschner/threejsJubilant#readme",
+  "dependencies": {
+    "@types/requirejs": "^2.1.28",
+    "@types/three": "latest",
+    "requirejs": "^2.3.2",
+    "three": "latest"
+  }
+}
