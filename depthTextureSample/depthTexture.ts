@@ -1,7 +1,6 @@
-requirejs(["../node_modules/three/build/three"], (THREE)=> {
-  console.log(THREE);
-  window.THREE = THREE;
-    requirejs(["../node_modules/three/examples/js/controls/OrbitControls"], ()=> {
+import THREE = require("three");
+import 'orbitControls';
+
 var vertShader =  
 `varying vec2 vUv;
       void main() {
@@ -162,5 +161,3 @@ var vertShader =
         // render post FX
         renderer.render( postScene, postCamera );
       }
-});
-});

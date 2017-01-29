@@ -71,7 +71,17 @@
     <!--<script src ="../node_modules/three/build/three.min.js"></script>
     <script src ="../node_modules/three/examples/js/controls/OrbitControls.js"></script>
 -->
-    <script data-main="depthTexture.js" src ="../node_modules/requirejs/require.js"></script>
+
+<script src="../node_modules/requirejs/require.js"> </script>
+<script>
+require(['./config'], function() {
+    // Configuration loaded now, safe to do other require calls
+    // that depend on that config.
+    require(['depthTexture.js'], function(foo) {
+
+    });
+});
+</script>
 
   </body>
 </html>
