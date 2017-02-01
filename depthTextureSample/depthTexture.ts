@@ -1,4 +1,6 @@
-//don't require anything - at this point all scripts are loaded via html...
+import THREE = require("three");
+import 'orbitControls';
+
 var vertShader =  
 `varying vec2 vUv;
       void main() {

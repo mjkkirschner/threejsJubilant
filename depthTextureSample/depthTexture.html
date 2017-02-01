@@ -68,10 +68,20 @@
      <div id="debug">
      <input type="range" id="myRange" value="0.5" min ="0.0" max = "3.0" step = "0.01">
      </div>
-    <script src ="../node_modules/three/build/three.min.js"></script>
+    <!--<script src ="../node_modules/three/build/three.min.js"></script>
     <script src ="../node_modules/three/examples/js/controls/OrbitControls.js"></script>
+-->
 
-    <script src ="depthTexture.js"></script>
+<script src="../node_modules/requirejs/require.js"> </script>
+<script>
+require(['./config'], function() {
+    // Configuration loaded now, safe to do other require calls
+    // that depend on that config.
+    require(['depthTexture.js'], function(foo) {
+
+    });
+});
+</script>
 
   </body>
 </html>
