@@ -122,7 +122,7 @@ var vertShader =
         var diffuse = new THREE.TextureLoader().load('textures/brick_diffuse.jpg');
         diffuse.wrapS = diffuse.wrapT = THREE.RepeatWrapping;
         // Setup some geometries
-        var geometry = new THREE.ConeGeometry( 1, 20, 32 );
+        var geometry = new THREE.TorusGeometry( 5, .5, 24,128, );
         var material = new THREE.MeshBasicMaterial({ color: 'blue' });
         var count = 50;
         var scale = 5;
@@ -137,7 +137,14 @@ var vertShader =
             z * scale
           );
           mesh.rotation.set(Math.random()*3.0, Math.random()*3.0, Math.random()*3.0);
-          scene.add(mesh);
+          if(mesh.rotation.x>1.5){
+            scene.add(mesh);
+          };
+
+          var edges = new THREE.EdgesHelper( mesh,100,1 );
+          edges.position.set(mesh.position.x,mesh.position.y,mesh.position.z);
+          edges.rotation.set(mesh.rotation.x,mesh.rotation.y,mesh.rotation.z);
+          scene.add(edges);
         }
       }
       function onWindowResize() {
