@@ -1,8 +1,8 @@
 var container;
-var camera:THREE.PerspectiveCamera;
-var scene:THREE.Scene;
+let camera:THREE.PerspectiveCamera;
+let scene:THREE.Scene;
 var raycaster:THREE.Raycaster;
-var renderer:THREE.WebGLRenderer;
+let renderer:THREE.WebGLRenderer;
 
 var mouse = new THREE.Vector2();
 var INTERSECTED:THREE.Mesh;

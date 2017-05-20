@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>three.js webgl - Depth Texture</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+      body {
+        color: #fff;
+        font-family:Monospace;
+        font-size:13px;
+        text-align:center;
+        background-color: ghostwhite;
+        margin: 0px;
+        overflow: hidden;
+      }
+      a {
+        color: #B2E9FF;
+        font-weight: bold;
+        pointer-events: auto;
+      }
+      canvas {
+        position: absolute;
+        top: 100px;
+        left: 0px;
+      }
+      #info {
+        pointer-events: none;
+        position: relative;
+        left: 0;
+        top: 0px; width: 100%;
+        padding: 5px;
+        display: inline-block;
+      }
+
+       #debug {
+        padding: 5px;
+      }
+
+      #error {
+        margin: auto;
+        margin-top: 40px;
+        display: block;
+        max-width: 400px;
+        padding: 20px;
+        background: #CE0808;
+      }
+    </style>
+
+   
+
+  </head>
+  <body>
+    <canvas></canvas>
+    <div id="info">
+      <a href="http://threejs.org" target="_blank">threejs</a> - WebGL - Depth Texture<br/>
+      Stores render target depth in a texture attachment.<br/>
+      Created by <a href="http://twitter.com/mattdesl" target="_blank">@mattdesl</a>.
+         
+
+
+      <div id="error" style="display: none;">
+      Your browser does not support <strong>WEBGL_depth_texture</strong>.<br/><br/>
+      This demo will not work.
+      </div>
+    </div>
+
+     <div id="debug">
+     <input type="range" id="myRange" value="0.5" min ="0.0" max = "3.0" step = "0.01">
+     </div>
+    <!--<script src ="../node_modules/three/build/three.min.js"></script>
+    <script src ="../node_modules/three/examples/js/controls/OrbitControls.js"></script>
+-->
+
+<script src="../node_modules/requirejs/require.js"> </script>
+<script>
+require(['./config'], function() {
+    // Configuration loaded now, safe to do other require calls
+    // that depend on that config.
+    require(['meshVerts.js'], function(foo) {
+
+    });
+});
+</script>
+
+  </body>
+</html>
