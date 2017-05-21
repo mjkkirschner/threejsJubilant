@@ -1,7 +1,6 @@
 
 
 namespace voxels {
-	let ThreeBSP = (window as any).ThreeBSP as any;
 
 	var range = (N): Array<any> => { return Array.apply(null, { length: N }).map(Function.call, Number) };
 
@@ -39,47 +38,71 @@ namespace voxels {
 
 
 		var start_time = (new Date()).getTime();
-		let result = null;
-
 
 		let cube_geometry = new THREE.CubeGeometry(1, 1, 1);
 		let cube_mesh = new THREE.Mesh(cube_geometry);
-		range(10).forEach((x) => {
-			range(10).forEach((y) => {
-				range(10).forEach((z) => {
-					
 
-					cube_mesh.position.x = x;
-					cube_mesh.position.y = y;
-					cube_mesh.position.z = z;
-					let cube_bsp = new ThreeBSP(cube_mesh);
-					//if the result has never been set, initialize it to the first cube
-					if (result == null) {
-						result = cube_bsp;
-					} else {
-						result = result.union(cube_bsp);
+		//fill a grid of voxels with 1s.
+		let voxelData: Array<Array<Array<number>>> = [[[]]];
+		range(50).forEach((x) => {
+			voxelData[x] = [];
+			range(50).forEach((y) => {
+				voxelData[x][y] = [];
+				range(50).forEach((z) => {
+					let dist = new THREE.Vector3(x, y, z).distanceTo(new THREE.Vector3(10, 10, 10));
+					let data = 0;
+					if (dist < 30) {
+						data = 1;
+					}
+					voxelData[x][y][z] = data;
 
+				});
+			});
+		});
+		console.log(JSON.stringify(voxelData));
+
+		//iterate the voxel data and decide to skip interior cubes
+		voxelData.forEach((x, xindex, xarray) => {
+			x.forEach((y, yindex, yarray) => {
+				y.forEach((z, zindex, zarray) => {
+					let skip = false;
+					//if this cell is solid
+					if (z == 1) {
+						//TODO we will need to do bounds checking before doing each of these checks...
+						//for now can just bail if we are near any edge.
+						if ((xindex > xarray.length - 2) || (yindex > yarray.length - 2) || (zindex > zarray.length - 2) ||
+							//or too small
+							(xindex < 2) || (yindex < 2) || (zindex < 2)) {
+
+							//for now do nothing TODO but should make a cube.
+							skip = true;
+						}
+
+						if (skip != true) {
+
+
+							//and all sorrounding cells are solid
+							if ((voxelData[xindex + 1][yindex][zindex] == 1) && (voxelData[xindex - 1][yindex][zindex] == 1)
+								&& (voxelData[xindex][yindex + 1][zindex] == 1) && (voxelData[xindex][yindex - 1][zindex] == 1)
+								&& (voxelData[xindex][yindex][zindex + 1] == 1) && (voxelData[xindex][yindex][zindex - 1] == 1)) {
+
+								//then don't draw anything
+
+							}
+							//if sorrounding cells are not solid
+							else {
+								//draw the cube
+								let cube_mesh = new THREE.Mesh(cube_geometry);
+								cube_mesh.position.x = xindex;
+								cube_mesh.position.y = yindex;
+								cube_mesh.position.z = zindex;
+								scene.add(cube_mesh);
+							}
+						}
 					}
 				})
 			})
 		});
-
-		let orgGeo = result.toGeometry() as THREE.Geometry;
-		//orgGeo.mergeVertices();
-		//var simplify = new (THREE as any).SimplifyModifier();
-		//let sortedGeometry = simplify.modify(orgGeo) as THREE.Geometry;
-		//let simplifiedGeo = changeLOD(orgGeo, sortedGeometry as any, .4);
-
-		//var wiregeo = new THREE.WireframeGeometry(orgGeo);
-		//var mat = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
-		//var wireframe = new THREE.LineSegments(wiregeo, mat);
-
-		//scene.add(wireframe);
-		//let Meshresult = result.toMesh(new THREE.MeshLambertMaterial());
-		//Meshresult.geometry.computeVertexNormals();
-		scene.add(new THREE.Mesh(orgGeo));
-
-
 
 
 		console.log('Example 1: ' + ((new Date()).getTime() - start_time) + 'ms');
