@@ -4,62 +4,12 @@ namespace voxels {
 
 	var range = (N): Array<any> => { return Array.apply(null, { length: N }).map(Function.call, Number) };
 
-	var controls: THREE.OrbitControls;
-	var renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera, light: THREE.Light;
-	document.addEventListener("DOMContentLoaded", (event) => {
-
-		renderer = new THREE.WebGLRenderer({ antialias: true });
-		renderer.setSize(window.innerWidth, window.innerHeight);
-		document.getElementById('viewport').appendChild(renderer.domElement);
-
-		scene = new THREE.Scene();
-
-		light = new THREE.DirectionalLight();
-		light.position.set(1, 1, 1).normalize();
-		scene.add(light);
-
-		camera = new THREE.PerspectiveCamera(
-			35,
-			window.innerWidth / window.innerHeight,
-			1,
-			1000
-		);
-		camera.position.set(0, 5, 20);
-		camera.lookAt(new THREE.Vector3(0, 0, 0));
-		scene.add(camera);
-
-		controls = new THREE.OrbitControls(camera, renderer.domElement);
-		controls.enableDamping = true;
-		controls.dampingFactor = 0.25;
-		controls.rotateSpeed = 0.35;
-		controls.autoRotate = true;
-
-
-
-
-		var start_time = (new Date()).getTime();
+	var meshVoxelData = (voxelData: Array<Array<Array<number>>>, scene: THREE.Scene) => {
 
 		let cube_geometry = new THREE.CubeGeometry(1, 1, 1);
 		let cube_mesh = new THREE.Mesh(cube_geometry);
-
-		//fill a grid of voxels with 1s.
-		let voxelData: Array<Array<Array<number>>> = [[[]]];
-		range(50).forEach((x) => {
-			voxelData[x] = [];
-			range(50).forEach((y) => {
-				voxelData[x][y] = [];
-				range(50).forEach((z) => {
-					let dist = new THREE.Vector3(x, y, z).distanceTo(new THREE.Vector3(10, 10, 10));
-					let data = 0;
-					if (dist < 30) {
-						data = 1;
-					}
-					voxelData[x][y][z] = data;
-
-				});
-			});
-		});
-		console.log(JSON.stringify(voxelData));
+		let voxelmat = new THREE.MeshStandardMaterial();
+		voxelmat.color = new THREE.Color(1, 1, 1);
 
 		//iterate the voxel data and decide to skip interior cubes
 		voxelData.forEach((x, xindex, xarray) => {
@@ -79,20 +29,16 @@ namespace voxels {
 						}
 
 						if (skip != true) {
-
-
 							//and all sorrounding cells are solid
 							if ((voxelData[xindex + 1][yindex][zindex] == 1) && (voxelData[xindex - 1][yindex][zindex] == 1)
 								&& (voxelData[xindex][yindex + 1][zindex] == 1) && (voxelData[xindex][yindex - 1][zindex] == 1)
 								&& (voxelData[xindex][yindex][zindex + 1] == 1) && (voxelData[xindex][yindex][zindex - 1] == 1)) {
-
 								//then don't draw anything
-
 							}
 							//if sorrounding cells are not solid
 							else {
 								//draw the cube
-								let cube_mesh = new THREE.Mesh(cube_geometry);
+								let cube_mesh = new THREE.Mesh(cube_geometry, voxelmat);
 								cube_mesh.position.x = xindex;
 								cube_mesh.position.y = yindex;
 								cube_mesh.position.z = zindex;
@@ -103,70 +49,111 @@ namespace voxels {
 				})
 			})
 		});
+	}
 
+	var controls: THREE.OrbitControls;
+	var renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera
+	var light: THREE.HemisphereLight;
+	var voxelData: Array<Array<Array<number>>> = [[[]]];
+	let raycaster = new THREE.Raycaster();
+
+	window.addEventListener('mousedown', (event) => {
+		// calculate mouse position in normalized device coordinates
+		// (-1 to +1) for both components
+		let mouse = {x:0,y:0};
+		mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+		mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+		// update the picking ray with the camera and mouse position
+		raycaster.setFromCamera(mouse, camera);
+
+		// calculate objects intersecting the picking ray
+		var intersects = raycaster.intersectObjects(scene.children);
+
+		if (intersects.length > 0) {
+			let pickedCubePoint = intersects[0].point;
+			let x = Math.floor(pickedCubePoint.x) + 1;
+			let y = Math.floor(pickedCubePoint.y) + 1;
+			let z = Math.floor(pickedCubePoint.z) + 1;
+
+			let newPt = new THREE.Vector3(x, y, z);
+			voxelData[x][y][z] = 1;
+		}
+		meshVoxelData(voxelData,scene);
+
+	}, false);
+
+
+	document.addEventListener("DOMContentLoaded", (event) => {
+
+		renderer = new THREE.WebGLRenderer({ antialias: true });
+		renderer.setSize(window.innerWidth, window.innerHeight);
+		renderer.setClearColor(new THREE.Color(.9, .9, .9));
+		document.getElementById('viewport').appendChild(renderer.domElement);
+
+		scene = new THREE.Scene();
+
+		light = (new THREE.HemisphereLight() as THREE.HemisphereLight);
+		light.color = new THREE.Color(1, .8, .8);
+		light.groundColor = new THREE.Color(.8, .8, .8);
+		light.intensity = 2.0;
+		light.position.set(0, 120, 0);
+		scene.add(light);
+
+		camera = new THREE.PerspectiveCamera(
+			35,
+			window.innerWidth / window.innerHeight,
+			1,
+			1000
+		);
+		camera.position.set(0, 5, 20);
+		camera.lookAt(new THREE.Vector3(0, 0, 0));
+		scene.add(camera);
+
+		controls = new THREE.OrbitControls(camera, renderer.domElement);
+		controls.enableDamping = true;
+		controls.dampingFactor = 0.25;
+		controls.rotateSpeed = 0.35;
+
+		var start_time = (new Date()).getTime();
+
+		//fill a grid of voxels with 1s.
+
+		range(100).forEach((x) => {
+			voxelData[x] = [];
+			range(100).forEach((y) => {
+				voxelData[x][y] = [];
+				range(100).forEach((z) => {
+					let dist = new THREE.Vector3(x, y, z).distanceTo(new THREE.Vector3(50, 50, 50));
+					let data = 0;
+					if (dist < 20) {
+						data = 1;
+					}
+					voxelData[x][y][z] = data;
+
+				});
+			});
+		});
+		//console.log(JSON.stringify(voxelData));
+		meshVoxelData(voxelData, scene);
+
+		let frame = new THREE.CubeGeometry(100, 100, 100);
+		frame = frame.translate(50, 50, 50) as THREE.CubeGeometry;
+		let bigCube = new THREE.Mesh(frame);
+
+		var geo = new THREE.WireframeGeometry(bigCube.geometry); // or WireframeGeometry( geometry )
+		var mat = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
+		var wireframe = new THREE.LineSegments(geo, mat);
+
+		scene.add(wireframe);
 
 		console.log('Example 1: ' + ((new Date()).getTime() - start_time) + 'ms');
 		render();
 
 	});
 
-
-	function changeLOD(originalGeometry: THREE.Geometry,
-		sortedGeometry: { sortedGeometry: any, map: any, vertices: any, faces: any },
-		k: number): THREE.Geometry {
-		// var LOD = 9;
-		var map = sortedGeometry.map;
-		var permutations = sortedGeometry.sortedGeometry;
-		var sortedVertices = sortedGeometry.vertices;
-		var t = sortedVertices.length - 1;
-		t = t * k | 0;
-
-		var numFaces = 0;
-		var face;
-
-		var geometry = originalGeometry;
-
-		for (let i = 0; i < geometry.faces.length; i++) {
-
-			face = geometry.faces[i];
-
-			var oldFace = sortedGeometry.faces[i];
-			face.a = oldFace.a;
-			face.b = oldFace.b;
-			face.c = oldFace.c;
-
-			while (face.a > t) face.a = map[face.a];
-			while (face.b > t) face.b = map[face.b];
-			while (face.c > t) face.c = map[face.c];
-
-			if (face.a !== face.b && face.b !== face.c && face.c !== face.a) numFaces++;
-
-		}
-
-		console.log('vertices', t, 'faces', numFaces);
-
-		let simplifiedFaces = numFaces;
-
-		let simplifiedVertices = t;
-
-
-
-
-		// delete geometry.__tmpVertices;
-		// console.log(geometry);
-		geometry.computeFaceNormals();
-		// geometry.computeVertexNormals();
-		geometry.verticesNeedUpdate = true;
-		geometry.normalsNeedUpdate = true;
-		return geometry;
-	}
-
-
-
 	function render() {
 		requestAnimationFrame(render);
 		renderer.render(scene, camera);
-		controls.update();
-
 	}
 }
