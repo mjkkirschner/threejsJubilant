@@ -42,6 +42,7 @@ namespace voxels {
 								cube_mesh.position.x = xindex;
 								cube_mesh.position.y = yindex;
 								cube_mesh.position.z = zindex;
+								cube_mesh.userData = "voxel";
 								scene.add(cube_mesh);
 							}
 						}
@@ -57,29 +58,45 @@ namespace voxels {
 	var voxelData: Array<Array<Array<number>>> = [[[]]];
 	let raycaster = new THREE.Raycaster();
 
+
+	var intervalId;
+
+	window.addEventListener('mouseup', (event) => {
+		clearInterval(intervalId);
+	});
+
 	window.addEventListener('mousedown', (event) => {
-		// calculate mouse position in normalized device coordinates
-		// (-1 to +1) for both components
-		let mouse = {x:0,y:0};
-		mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-		mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+		intervalId = setInterval( (event) => {
+			// calculate mouse position in normalized device coordinates
+			// (-1 to +1) for both components
+			let mouse = { x: 0, y: 0 };
+			mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+			mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 
-		// update the picking ray with the camera and mouse position
-		raycaster.setFromCamera(mouse, camera);
+			// update the picking ray with the camera and mouse position
+			raycaster.setFromCamera(mouse, camera);
 
-		// calculate objects intersecting the picking ray
-		var intersects = raycaster.intersectObjects(scene.children);
+			// calculate objects intersecting the picking ray
+			var intersects = raycaster.intersectObjects(scene.children);
 
-		if (intersects.length > 0) {
-			let pickedCubePoint = intersects[0].point;
-			let x = Math.floor(pickedCubePoint.x) + 1;
-			let y = Math.floor(pickedCubePoint.y) + 1;
-			let z = Math.floor(pickedCubePoint.z) + 1;
+			if (intersects.length > 0) {
+				let pickedCubePoint = intersects[0].point;
+				let x = Math.floor(pickedCubePoint.x) + 1;
+				let y = Math.floor(pickedCubePoint.y) + 1;
+				let z = Math.floor(pickedCubePoint.z) + 1;
 
-			let newPt = new THREE.Vector3(x, y, z);
-			voxelData[x][y][z] = 1;
+				let newPt = new THREE.Vector3(x, y, z);
+				voxelData[x][y][z] = 1;
+			}
+			//delete all voxels in the scene already
+			scene.children.forEach((child) => {
+				if (child.userData == "voxel")
+				{ scene.remove(child) }
+			});
+
+			meshVoxelData(voxelData, scene);
 		}
-		meshVoxelData(voxelData,scene);
+			, 100,event);
 
 	}, false);
 
@@ -106,14 +123,16 @@ namespace voxels {
 			1,
 			1000
 		);
-		camera.position.set(0, 5, 20);
-		camera.lookAt(new THREE.Vector3(0, 0, 0));
+		camera.position.set(0, 200, 50);
 		scene.add(camera);
 
 		controls = new THREE.OrbitControls(camera, renderer.domElement);
 		controls.enableDamping = true;
 		controls.dampingFactor = 0.25;
 		controls.rotateSpeed = 0.35;
+		controls.enableRotate = false;
+		controls.autoRotate = true;
+		controls.target = new THREE.Vector3(50, 50, 50);
 
 		var start_time = (new Date()).getTime();
 
@@ -153,6 +172,7 @@ namespace voxels {
 	});
 
 	function render() {
+		controls.update();
 		requestAnimationFrame(render);
 		renderer.render(scene, camera);
 	}
