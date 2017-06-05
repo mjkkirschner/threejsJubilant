@@ -2,65 +2,94 @@
 
 namespace voxels {
 
-	class Tool {
-		private element: HTMLElement
-		private propertiesElement: HTMLElement;
 
-		constructor(toolbarElement: HTMLElement, toolPropertiesElement: HTMLElement) {
+	/**
+	 * tool is a class which backs all tools that interact with the voxel data model
+	 * they provide both a button element which activates the tool, and a properties element
+	 * which provides options for modifying the behavior of the tool.
+	 * 
+	 */
+	class Tool {
+		protected element: HTMLElement
+		protected propertiesElement: HTMLElement;
+		protected enabled: boolean = false;
+		protected voxelRenderer:voxelRenderer
+
+		constructor(toolbarElement: HTMLElement, toolPropertiesElement: HTMLElement,voxelRenderer:voxelRenderer) {
+			//TODO think about the logic here a bit more...	
+			this.voxelRenderer = voxelRenderer;
 			//construct a new tool button
-			this.element = new HTMLElement();
+			this.element = document.createElement("div");
 			this.element = this.render();
 			//might need to replace the element...
 			toolbarElement.appendChild(this.element);
 
-			this.propertiesElement = new HTMLElement();
+			this.propertiesElement = document.createElement("div");
 			this.propertiesElement = this.renderToolProperties();
 			//might need to replace the element...
 			toolPropertiesElement.appendChild(this.propertiesElement);
 		}
 
-		render(): HTMLElement {
+		protected render(): HTMLElement {
 			//subclasses will attach things to this tool button	
 			return this.element;
 		}
 
-		renderToolProperties(): HTMLElement {
+		protected renderToolProperties(): HTMLElement {
 			//subclasses will attach things to this 	
 			return this.propertiesElement;
 		}
 
-		enable() {
+		public onEnable() {
 
 		}
 
-		disable() {
+		public onDisable() {
 
 		}
 
 	}
 
-	class voxelRenderer {
+	class brushTool extends Tool {
 
-		private controls: THREE.FirstPersonControls;
-		private renderer: THREE.WebGLRenderer;
-		private scene: THREE.Scene;
-		private camera: THREE.PerspectiveCamera
-		private light: THREE.HemisphereLight;
-		private voxelData: Array<Array<Array<number>>> = [[[]]];
-		private raycaster = new THREE.Raycaster();
-		private clock = new THREE.Clock(true);
+		private raycaster  = new THREE.Raycaster();
+		private mouse = { x: 0, y: 0 };
 
-		constructor() {
+		constructor(toolbarElement: HTMLElement, toolPropertiesElement: HTMLElement,voxelRender:voxelRenderer) {
+			super(toolbarElement, toolPropertiesElement,voxelRender);
+		}
 
+		//lets add a button to the element
+		render(): HTMLElement {
+			//TODO should this exist in the base class?
+			let myButton = document.createElement("input");
+			myButton.type = "button";
+			myButton.value = "my button";
+			//invert the state on mouseclick and run the correct function
+			myButton.onclick = (ev: MouseEvent) => {
+			this.enabled = !this.enabled
+				if (this.enabled) {
+					this.onEnable();
+				}
+				else {
+					this.onDisable();
+				}
+			}
+
+			this.element.appendChild(myButton);
+			return this.element;
+		}
+
+		public onEnable() {
 			var intervalId;
-			let mouse = { x: 0, y: 0 };
 
+			//hookup a callback for mouse down and mouse move
 			window.addEventListener('mouseup', (event) => {
 				clearInterval(intervalId);
 			});
 			window.addEventListener('mousemove', (event) => {
-				mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-				mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+				this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+				this.mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 			});
 
 			window.addEventListener('mousedown', (event) => {
@@ -70,7 +99,7 @@ namespace voxels {
 
 
 					// update the picking ray with the camera and mouse position
-					this.raycaster.setFromCamera(mouse, this.camera);
+					this.raycaster.setFromCamera(this.mouse, this.voxelRenderer.camera);
 					let intersects = [];
 					let distanceTraveled = 0;
 					let step = 0.1;
@@ -84,7 +113,7 @@ namespace voxels {
 						let y = Math.floor(currentPoint.y);
 						let z = Math.floor(currentPoint.z);
 						try {
-							if (this.voxelData[x][y][z] == 1) {
+							if (this.voxelRenderer.voxelData[x][y][z] == 1) {
 								intersects.push(currentPoint);
 								break;
 							}
@@ -104,20 +133,45 @@ namespace voxels {
 
 						let newPt = new THREE.Vector3(x, y, z);
 
-						this.voxelData[newPt.x][newPt.y][newPt.z] = 1;
+						this.voxelRenderer.voxelData[newPt.x][newPt.y][newPt.z] = 1;
 					}
 					//delete all voxels in the scene already
-					this.scene.children.forEach((child) => {
+					this.voxelRenderer.scene.children.forEach((child) => {
 						if (child.userData == "voxel")
-						{ this.scene.remove(child) }
+						{ this.voxelRenderer.scene.remove(child) }
 					});
 
-					this.meshVoxelData(this.voxelData, this.scene);
+					//TODO the voxelRenderer should take of watching the voxelData and kicking off
+					//a run of this culling algo, we should not do it here.
+					this.voxelRenderer.onVoxelDataUpdated();
 				}
 					, 50, event);
 
 			}, false);
+		}
 
+		public onDisable() {
+			//unhook all callbacks
+
+		}
+
+	}
+
+	class voxelRenderer {
+
+		private controls: THREE.FirstPersonControls;
+		private renderer: THREE.WebGLRenderer;
+		public scene: THREE.Scene;
+		public camera: THREE.PerspectiveCamera
+		private light: THREE.HemisphereLight;
+		//add some properties for interacting with this data.
+		public voxelData: Array<Array<Array<number>>> = [[[]]];
+		private raycaster = new THREE.Raycaster();
+		private clock = new THREE.Clock(true);
+
+		constructor() {
+
+			let mouse = { x: 0, y: 0 };
 
 			document.addEventListener("DOMContentLoaded", (event) => {
 
@@ -194,16 +248,26 @@ namespace voxels {
 
 		}
 
+		//handler for voxel data being updated
+		//usually this should only be called from this class, but clients can force this to execute
+		public onVoxelDataUpdated(){
+			this.meshVoxelData(this.voxelData,this.scene);
+		}
+
 		private render() {
-				this.controls.update(this.clock.getDelta());
-				requestAnimationFrame(()=>{this.render()});
-				renderer.render(this.scene, this.camera);
-			}
+			this.controls.update(this.clock.getDelta());
+			requestAnimationFrame(() => { this.render() });
+			renderer.render(this.scene, this.camera);
+		}
 
 		private range(N: number) {
 			return Array.apply(null, { length: N }).map(Function.call, Number)
 		}
-
+		
+		/** It returns a mesh representation of a 3d array of numbers.
+		 * this function takes a 3d array of numbers and culls the interior cubes
+		 * instantiating cubes into the given scene on the edges of the volume.
+		 */
 		private meshVoxelData(voxelData: Array<Array<Array<number>>>, scene: THREE.Scene) {
 
 			let cube_geometry = new THREE.CubeGeometry(1, 1, 1);
@@ -255,7 +319,10 @@ namespace voxels {
 	}
 
 
-new voxelRenderer();
+	let voxelData = new voxelRenderer();
+	let toolbar = document.getElementById("toolbar");
+	let properties = document.getElementById("properties");
+	let bTool = new brushTool(toolbar, properties,voxelData);
 
 
 }
